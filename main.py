@@ -66,7 +66,32 @@ for contour in contours:
     else:
         cv2.drawContours(close_y, [contour], 0, 0, -1)
 
+############################
+#  FINDING THE GRID POINTS #
+############################
 
-plt.imshow(close_y, cmap="gray")
+intersection = cv2.bitwise_and(close_x, close_y) # Find the intersection of the vertical and the horizantal lines
+close = cv2.morphologyEx(intersection, cv2.MORPH_DILATE, cv2.getStructuringElement(cv2.MORPH_RECT, (10, 10)), 1) # Thicken the intersection points
+contours, hier = cv2.findContours(close, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE) # Find the contours
+
+# Find the centroids
+centroids = []
+for contour in contours:
+    mom = cv2.moments(contour)
+    try: (x, y) = int(mom["m10"] / mom["m00"]), int(mom["m01"] / mom["m00"])
+    except: pass
+    centroids.append((x, y))
+
+# Sort them from left to right, top to bottom
+centroids = np.array(centroids)
+centroids = centroids[np.argsort(centroids[:, 1])]
+centroids = np.vstack([centroids[i*10:(i+1)*10][np.argsort(centroids[i*10:(i+1)*10,0])] for i in range(10)])
+
+# Draw the centroids on the original image
+for i, (x, y) in enumerate(centroids):
+    cv2.circle(img, (x, y), 4, (0, 255, 0), -1)
+    cv2.putText(img, str(i), (x, y), cv2.FONT_HERSHEY_DUPLEX, 1, (255, 0, 0))
+
+plt.imshow(img)
 
 plt.show()
