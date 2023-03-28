@@ -109,6 +109,37 @@ for x, y in enumerate(centroids):
         warp = cv2.warpPerspective(img, retval, (450, 450))
         corrected[r*50:(r+1)*50-1 , c*50:(c+1)*50-1] = warp[r*50:(r+1)*50-1 , c*50:(c+1)*50-1].copy()
 
-plt.imshow(corrected)
+#######################################
+#  SPLIT THE IMAGE TO FIND EACH DIGIT #
+#######################################
+
+ret, thresh = cv2.threshold(cv2.cvtColor(corrected, cv2.COLOR_BGR2GRAY), 127, 255, cv2.THRESH_BINARY_INV) # Apply threshold
+
+# Slice the grid into 81 pieces to get images of each cell
+boxes = []
+rows = np.vsplit(thresh, 9)
+for row in rows:
+    cols= np.hsplit(row, 9)
+    for box in cols:
+        boxes.append(box)
+
+# Zoom in a litte bit to get rid of the edges
+for i, box in enumerate(boxes):
+    boxes[i] = box[3:47, 3:47]
+
+# Center the digits
+for i, box in enumerate(boxes):
+    contours, hier = cv2.findContours(box, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+    if len(contours) == 0: continue
+    largest_contour = max(contours, key=cv2.contourArea)
+    x, y, w, h = cv2.boundingRect(largest_contour)
+    blank = np.zeros((box.shape), np.uint8)
+    yoff = (box.shape[1] - h) // 2
+    xoff = (box.shape[0] - w) // 2
+    blank[yoff:yoff+h, xoff:xoff+w] = box[y:y+h, x:x+w]
+    boxes[i] = blank
+
+
+plt.imshow(boxes[9], cmap="gray")
 
 plt.show()
