@@ -88,10 +88,27 @@ centroids = centroids[np.argsort(centroids[:, 1])]
 centroids = np.vstack([centroids[i*10:(i+1)*10][np.argsort(centroids[i*10:(i+1)*10,0])] for i in range(10)])
 
 # Draw the centroids on the original image
+grid = img.copy()
 for i, (x, y) in enumerate(centroids):
-    cv2.circle(img, (x, y), 4, (0, 255, 0), -1)
-    cv2.putText(img, str(i), (x, y), cv2.FONT_HERSHEY_DUPLEX, 1, (255, 0, 0))
+    cv2.circle(grid, (x, y), 4, (0, 255, 0), -1)
+    cv2.putText(grid, str(i), (x, y), cv2.FONT_HERSHEY_DUPLEX, 1, (255, 0, 0))
 
-plt.imshow(img)
+############################
+#  CORRECT THE PERSPECTIVE #
+############################
+
+# Apply transform
+corrected = np.zeros((450, 450, 3), np.uint8)
+for x, y in enumerate(centroids):
+    r = x // 10
+    c = x % 10
+    if c != 9 and r != 9:
+        src = centroids.reshape((10, 10, 2))[r:r+2, c:c+2 , :].reshape((4,2))
+        dst = np.array([[c*50, r*50], [(c+1)*50-1, r*50],[c*50, (r+1)*50-1], [(c+1)*50-1, (r+1)*50-1]], np.float32)
+        retval = cv2.getPerspectiveTransform(src.astype(np.float32), dst)
+        warp = cv2.warpPerspective(img, retval, (450, 450))
+        corrected[r*50:(r+1)*50-1 , c*50:(c+1)*50-1] = warp[r*50:(r+1)*50-1 , c*50:(c+1)*50-1].copy()
+
+plt.imshow(corrected)
 
 plt.show()
