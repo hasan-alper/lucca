@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
+import keras
 
 ############################
 #  PREPROCESSING THE IMAGE #
@@ -123,9 +124,6 @@ for row in rows:
     for box in cols:
         boxes.append(box)
 
-# Zoom in a litte bit to get rid of the edges
-for i, box in enumerate(boxes):
-    boxes[i] = box[3:47, 3:47]
 
 # Center the digits
 for i, box in enumerate(boxes):
@@ -139,7 +137,35 @@ for i, box in enumerate(boxes):
     blank[yoff:yoff+h, xoff:xoff+w] = box[y:y+h, x:x+w]
     boxes[i] = blank
 
+# Prepare images for the model
+digits = []
+for box in boxes:
+    box = box[3:47, 3:47]
+    box = cv2.resize(box, (28, 28))
+    box = np.reshape(box, (28, 28))
+    box = box / 255
+    digits.append(box)
 
-plt.imshow(boxes[9], cmap="gray")
+digits = np.array(digits)
+
+#########################
+#  RECOGNIZE THE DIGITS #
+#########################
+
+model = keras.models.load_model("model.h5") # Load the model
+predictions = model.predict(digits) # Predict the digits from splitted digit images
+
+# Find the best prediction
+results = []
+for prediction in predictions:
+    max = np.argmax(prediction) if np.max(prediction) > 0.5 else 0
+    results.append(max)
+
+results = np.array(results)
+
+
+
+print(results.reshape((9, 9)))
+# plt.imshow(digits[6], cmap="gray")
 
 plt.show()
