@@ -1,5 +1,6 @@
 from Extractor import Extractor
 from Recognizer import Recognizer
+from Solver import Solver
 
 extractor = Extractor("TestImages/sudoku-1.png")
 
@@ -14,3 +15,6 @@ recognizer = Recognizer(extractor.image)
 recognizer.split_digits()
 recognizer.recognize_digits()
 
+solver = Solver(recognizer.results)
+
+solver.check_validity()

@@ -54,6 +54,7 @@ class Recognizer:
             results.append(max)
         results = np.array(results).reshape((9, 9)) 
         
+        # Create an image of recognized digits for display purposes
         image_results = np.zeros((450, 450, 3), np.uint8)
         for y, row in enumerate(results):
             for x, digit in enumerate(row):
@@ -62,6 +63,7 @@ class Recognizer:
         
         self._write_images(image_results, 9)
         self.image = image_results
+        self.results = results
 
     def _write_images(self, img, i):
         try: os.remove(f"StageImages/{i}.jpg")
