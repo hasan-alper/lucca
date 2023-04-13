@@ -1,6 +1,8 @@
 import numpy as np
 import cv2
+import os
 import keras
+import matplotlib.pyplot as plt
 
 class Recognizer:
 
@@ -17,7 +19,6 @@ class Recognizer:
             cols= np.hsplit(row, 9)
             for box in cols:
                 boxes.append(box)
-
 
         # Center the digits
         for i, box in enumerate(boxes):
@@ -51,7 +52,20 @@ class Recognizer:
         for prediction in predictions:
             max = np.argmax(prediction) if np.max(prediction) > 0.5 else 0
             results.append(max)
+        results = np.array(results).reshape((9, 9)) 
+        
+        image_results = np.zeros((450, 450, 3), np.uint8)
+        for y, row in enumerate(results):
+            for x, digit in enumerate(row):
+                if digit == 0: continue
+                cv2.putText(image_results, str(digit), (x*50+15, y*50+30), cv2.FONT_HERSHEY_DUPLEX, 1.2, (255, 255, 255))
+        
+        self._write_images(image_results, 9)
+        self.image = image_results
 
-        results = np.array(results)
+    def _write_images(self, img, i):
+        try: os.remove(f"StageImages/{i}.jpg")
+        except: pass
+        cv2.imwrite(f"StageImages/{i}.jpg", img)
 
-        print(results.reshape((9, 9)))
+        

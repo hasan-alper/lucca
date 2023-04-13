@@ -18,12 +18,14 @@ from keras.layers import Dense, Conv2D, MaxPool2D, Flatten
 model = Sequential()
 model.add(Conv2D(filters=32, kernel_size=(4, 4), input_shape=(28, 28, 1), activation="relu"))
 model.add(MaxPool2D(pool_size=(2, 2)))
+model.add(Conv2D(filters=32, kernel_size=(4, 4), input_shape=(28, 28, 1), activation="relu"))
+model.add(MaxPool2D(pool_size=(2, 2)))
 model.add(Flatten())
 model.add(Dense(128, activation="relu"))
 model.add(Dense(10, activation="softmax"))
 
 model.compile(loss="categorical_crossentropy", optimizer="rmsprop", metrics=["accuracy"])
-model.fit(x_train, y_train, epochs=8)
+model.fit(x_train, y_train, epochs=6)
 
 print(model.evaluate(x_test, y_test)) # Evaluate the model (accuracy: 0.989)
 
