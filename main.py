@@ -18,3 +18,4 @@ recognizer.recognize_digits()
 solver = Solver(recognizer.results)
 
 solver.check_validity()
+solver.solve()
