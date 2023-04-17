@@ -94,20 +94,22 @@ class Extractor:
             cv2.putText(grid, str(i), (x, y), cv2.FONT_HERSHEY_DUPLEX, 0.6, (255, 0, 0))
 
         self._write_images(grid, 7)
-        self.image = centroids
+        self.centroids = centroids
 
     def correct_perspective(self):
         # Apply transform
         corrected = np.zeros((450, 450, 3), np.uint8)
-        for x, y in enumerate(self.image):
-            r = x // 10
-            c = x % 10
-            if c != 9 and r != 9:
-                src = self.image.reshape((10, 10, 2))[r:r+2, c:c+2 , :].reshape((4,2))
-                dst = np.array([[c*50, r*50], [(c+1)*50-1, r*50],[c*50, (r+1)*50-1], [(c+1)*50-1, (r+1)*50-1]], np.float32)
-                retval = cv2.getPerspectiveTransform(src.astype(np.float32), dst)
-                warp = cv2.warpPerspective(self.original, retval, (450, 450))
-                corrected[r*50:(r+1)*50-1 , c*50:(c+1)*50-1] = warp[r*50:(r+1)*50-1 , c*50:(c+1)*50-1].copy()
+        for i in range(100):
+            r = i // 10
+            c = i % 10
+
+            if c == 9 or r == 9: continue
+
+            src = np.array([self.centroids[i], self.centroids[i+1], self.centroids[i+10], self.centroids[i+11]], dtype=np.float32)
+            dst = np.array([[50*c, 50*r], [50*c+50, 50*r], [50*c, 50*r+50], [50*c+50, 50*r+50]], dtype=np.float32)
+            mat = cv2.getPerspectiveTransform(src, dst)
+            warp = cv2.warpPerspective(self.original, mat, (450, 450))
+            corrected[50*r:50*r+50, 50*c:50*c+50] = warp[50*r:50*r+50, 50*c:50*c+50]
 
         self._write_images(corrected, 8)
         self.image = corrected

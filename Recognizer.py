@@ -18,6 +18,7 @@ class Recognizer:
         for row in rows:
             cols= np.hsplit(row, 9)
             for box in cols:
+                box = box[3:47, 3:47]
                 boxes.append(box)
 
         # Center the digits
@@ -26,6 +27,7 @@ class Recognizer:
             if len(contours) == 0: continue
             largest_contour = max(contours, key=cv2.contourArea)
             x, y, w, h = cv2.boundingRect(largest_contour)
+            if h / box.shape[1] < 0.2 or w / box.shape[0] < 0.2: continue
             blank = np.zeros((box.shape), np.uint8)
             yoff = (box.shape[1] - h) // 2
             xoff = (box.shape[0] - w) // 2
@@ -35,7 +37,6 @@ class Recognizer:
         # Prepare images for the model
         digits = []
         for box in boxes:
-            box = box[3:47, 3:47]
             box = cv2.resize(box, (28, 28))
             box = np.reshape(box, (28, 28))
             box = box / 255
