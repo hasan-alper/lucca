@@ -19,3 +19,4 @@ solver = Solver(recognizer.results)
 
 solver.check_validity()
 solver.solve_puzzle()
+extractor.reverse_perspective(solver.image)

@@ -114,6 +114,43 @@ class Extractor:
         self._write_images(corrected, 8)
         self.image = corrected
 
+    def reverse_perspective(self, img):
+        # Similar to correct_respective, but inverse
+        blank = np.zeros((self.original.shape[0], self.original.shape[1], 3), np.uint8)
+
+        for i in range(100):
+            r = i // 10
+            c = i % 10
+
+            if c == 9 or r == 9: continue
+
+            c1 = self.centroids[i]
+            c2 = self.centroids[i+1]
+            c3 = self.centroids[i+10]
+            c4 = self.centroids[i+11]
+            
+            src = np.array([[50*c, 50*r], [50*c+50, 50*r], [50*c, 50*r+50], [50*c+50, 50*r+50]], dtype=np.float32)
+            dst = np.array([c1, c2, c3, c4], dtype=np.float32)
+            mat = cv2.getPerspectiveTransform(src, dst)
+            warp = cv2.warpPerspective(img, mat, (self.original.shape[1], self.original.shape[0]))
+
+            top_left_x = min([c1[1], c3[1]])
+            top_left_y = min([c1[0], c3[0]])
+            bot_right_x = max([c2[1], c4[1]])
+            bot_right_y = max([c2[0], c4[0]])
+
+            blank[top_left_x:bot_right_x, top_left_y:bot_right_y] = warp[top_left_x:bot_right_x, top_left_y:bot_right_y]
+
+        gray = cv2.cvtColor(blank,cv2.COLOR_BGR2GRAY)
+        ret, mask = cv2.threshold(gray, 40, 255, cv2.THRESH_BINARY)
+        fg = cv2.bitwise_and(blank, blank, mask=mask)
+
+        mask_inv = cv2.bitwise_not(mask)
+        bg = cv2.bitwise_and(self.original, self.original, mask=mask_inv)
+        result = cv2.add(fg, bg)
+
+        self._write_images(result, 11)
+
     def _write_images(self, img, i):
         try: os.remove(f"StageImages/{i}.jpg")
         except: pass

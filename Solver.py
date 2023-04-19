@@ -41,9 +41,8 @@ class Solver:
         image_results = np.zeros((450, 450, 3), np.uint8)
         for y, row in enumerate(self.results):
             for x, digit in enumerate(row):
-                if digit == 0:
-                    cv2.putText(image_results, str(self.arr[y][x]), (x*50+15, y*50+30), cv2.FONT_HERSHEY_DUPLEX, 1.2, (255, 255, 255))
-                else: cv2.putText(image_results, str(digit), (x*50+15, y*50+30), cv2.FONT_HERSHEY_DUPLEX, 1.2, (255, 0, 255))
+                if digit == 0: continue
+                else: cv2.putText(image_results, str(digit), (x*50+10, y*50+40), cv2.FONT_HERSHEY_DUPLEX, 1.4, (255, 0, 255), lineType=cv2.LINE_AA)
         
         self._write_images(image_results, 10)
         self.image = image_results
