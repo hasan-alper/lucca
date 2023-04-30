@@ -1,16 +1,15 @@
 import numpy as np
 import cv2
-import os
 import keras
-import matplotlib.pyplot as plt
 
 class Recognizer:
 
-    def __init__(self, img):
-        self.image = img # Load the image
-
-    def split_digits(self):
-        ret, thresh = cv2.threshold(cv2.cvtColor(self.image, cv2.COLOR_BGR2GRAY), 127, 255, cv2.THRESH_BINARY_INV) # Apply threshold
+    @staticmethod
+    def split_digits(img):
+        """
+        Slice the grid into 81 pieces to get images of each cell and prepare images for the model.
+        """
+        ret, thresh = cv2.threshold(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY), 127, 255, cv2.THRESH_BINARY_INV) # Apply threshold
 
         # Slice the grid into 81 pieces to get images of each cell
         boxes = []
@@ -42,11 +41,16 @@ class Recognizer:
             box = box / 255
             digits.append(box)
 
-        self.digits = np.array(digits)
+        return np.array(digits)
 
-    def recognize_digits(self):
+
+    @staticmethod
+    def recognize_digits(digits):
+        """
+        Predict the digits from splitted digit images.
+        """
         model = keras.models.load_model("model.h5") # Load the model
-        predictions = model.predict(self.digits) # Predict the digits from splitted digit images
+        predictions = model.predict(digits) # Predict the digits from splitted digit images
 
         # Find the best prediction
         results = []
@@ -55,20 +59,11 @@ class Recognizer:
             results.append(max)
         results = np.array(results).reshape((9, 9)) 
         
-        # Create an image of recognized digits for display purposes
+        # Create an image of recognized digits just for display purposes
         image_results = np.zeros((450, 450, 3), np.uint8)
         for y, row in enumerate(results):
             for x, digit in enumerate(row):
                 if digit == 0: continue
                 cv2.putText(image_results, str(digit), (x*50+10, y*50+40), cv2.FONT_HERSHEY_DUPLEX, 1.4, (255, 255, 255), lineType=cv2.LINE_AA)
         
-        self._write_images(image_results, 9)
-        self.image = image_results
-        self.results = results
-
-    def _write_images(self, img, i):
-        try: os.remove(f"StageImages/{i}.jpg")
-        except: pass
-        cv2.imwrite(f"StageImages/{i}.jpg", img)
-
-        
+        return image_results, results

@@ -11,49 +11,55 @@ Here are some of the steps of this process:
 
 Import a sudoku puzzle image.
 
-![](StageImages/1.jpg)
+![](Screenshots/0.jpg)
 
 ### Process The Image
 
 Convert the image to grayscale and apply some blur to reduce the noise.
 
-![](StageImages/3.jpg)
+![](Screenshots/1.jpg)
 
 ### Find The Outerbox
 
 Apply thresholding and find the biggest contour. Then get rid of the parts outside the box.
 
-![](StageImages/5.jpg)
+![](Screenshots/2.jpg)
 
 ### Determine The Vertices
 
 Determine the intersections of the lines.
 
-![](StageImages/7.jpg)
+![](Screenshots/3.jpg)
+
+### Find The Coordinates of the Vertices
+
+Find the coordinates of the vertices to used them later in the transformation step.
+
+![](Screenshots/4.jpg)
 
 ### Transform The Image
 
 Correct the perspective to find the digits easily later in the process
 
-![](StageImages/8.jpg)
+![](Screenshots/5.jpg)
 
 ### Identify The Digits
 
 Predict the digits in the puzzle.
 
-![](StageImages/9.jpg)
+![](Screenshots/6.jpg)
 
 ### Solve The Puzzle
 
 Determine the remaining digits using a backtracking algorithm.
 
-![](StageImages/10.jpg)
+![](Screenshots/7.jpg)
 
 ### Finalize The Solution
 
 Write the solution directly onto the original image.
 
-![](StageImages/11.jpg)
+![](Screenshots/8.jpg)
 
 ## Installation
 In order to play around with the project, you can set up this repository locally following these simple steps.

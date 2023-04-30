@@ -1,25 +1,26 @@
 import numpy as np
 import cv2
-import os
 
 class Extractor:
 
-    def __init__(self, path):
-        self.image = cv2.imread(path) # Load the image
-        self.original = cv2.imread(path)
-        self._write_images(self.image, 1)
+    @staticmethod
+    def preprocess_image(img):
+        """
+        Converts the image to grayscale and adds blur to reduce noise and details.
+        """
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)  # Convert image to grayscale
+        blur = cv2.GaussianBlur(gray, (5, 5), 10) # Add blur
 
-    def preprocess_image(self):
-        self.image_gray = cv2.cvtColor(self.image, cv2.COLOR_BGR2GRAY) # Convert image to grayscale
-        self._write_images(self.image_gray, 2)
-        image_blur = cv2.GaussianBlur(self.image_gray, (5, 5), 10) # Add blur to reduce noise and details
-        self._write_images(image_blur, 3)
-        self.image = image_blur
+        return blur
+    
 
-    def detect_grid(self):
-        image_thresh = cv2.adaptiveThreshold(self.image, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 11, 8) # Convert image to binary before finding contours for better accuracy
-        self._write_images(image_thresh, 4)
-        contours, hierarchy = cv2.findContours(image_thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE) # Find all the contours
+    @staticmethod
+    def detect_outerbox(img, dst):
+        """
+        Detects the outerbox of the puzzle by finding the largest contour. Then, applys a mask to get rid of the outer parts of the puzzle.
+        """
+        thresh = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 11, 8) # Convert image to binary before finding contours
+        contours, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE) # Find all the contours
 
         # Find the largest contour
         max_area = 0
@@ -30,14 +31,18 @@ class Extractor:
                 max_area = area
                 largest_contour = contour
 
-        mask = np.zeros((self.image.shape), np.uint8) # Create a blank mask
+        mask = np.zeros(img.shape, np.uint8) # Create a blank mask
         cv2.drawContours(mask, [largest_contour], 0, 255, -1) # Draw and fill up the largest contour we found
-        image_masked = cv2.bitwise_and(self.image_gray, mask) # Apply the mask to the grayscale image
-        self._write_images(image_masked, 5)
-        self.image = image_masked
+        masked = cv2.bitwise_and(cv2.cvtColor(dst, cv2.COLOR_BGR2GRAY), mask) # Apply the mask to the grayscale image
+        return masked
+    
 
-    def detect_lines(self):
-        gradient_x = cv2.Sobel(self.image, cv2.CV_16S, 1, 0) # Find the all vertical lines
+    @staticmethod
+    def detect_grid(img):
+        """
+        Finds all the vertical and horizantal lines.
+        """
+        gradient_x = cv2.Sobel(img, cv2.CV_16S, 1, 0) # Find the all vertical lines
         gradient_x = cv2.convertScaleAbs(gradient_x) # Convert to 8-bit since Otsu Threshold only works with 8-bit single-channel images
         ret, thresh_x = cv2.threshold(gradient_x, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU) # Apply thresholding before finding contours
         close_x = cv2.morphologyEx(thresh_x, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_RECT, (2, 10)), 1) # Fill out any cracks in the board lines
@@ -51,11 +56,11 @@ class Extractor:
             else:
                 cv2.drawContours(close_x, [contour], 0, 0, -1)
  
-        gradient_y = cv2.Sobel(self.image, cv2.CV_16S, 0, 1) # Find the all horizontal lines
+        gradient_y = cv2.Sobel(img, cv2.CV_16S, 0, 1) # Find the all horizontal lines
         gradient_y = cv2.convertScaleAbs(gradient_y) # Convert to 8-bit since Otsu Threshold only works with 8-bit single-channel images
         ret, thresh_y = cv2.threshold(gradient_y, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU) # Apply thresholding before finding contours, again
         close_y = cv2.morphologyEx(thresh_y, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_RECT, (10, 2)), 1) # Fill out any cracks in the board lines
-        contours, hierarchy = cv2.findContours(close_y, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE) # Find all the contours
+        contours, hierarchy = cv2.findContours(close_y, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)  # Find all the contours
 
         # Find the contours whose ratio of width/height is greater than 5 to differentiate lines from numbers
         for contour in contours:
@@ -65,13 +70,17 @@ class Extractor:
             else:
                 cv2.drawContours(close_y, [contour], 0, 0, -1)
 
-        image_intersection = cv2.bitwise_and(close_x, close_y) # Find the intersection of the vertical and the horizantal lines
-        image_grid = cv2.bitwise_or(close_x, close_y)
-        self._write_images(image_grid, 6)
-        self.image = image_intersection
+        intersection = cv2.bitwise_and(close_x, close_y) # Find the intersection of the vertical and the horizantal lines
 
-    def detect_vertices(self):
-        close = cv2.morphologyEx(self.image, cv2.MORPH_DILATE, cv2.getStructuringElement(cv2.MORPH_RECT, (10, 10)), 1) # Thicken the intersection points
+        return intersection
+
+
+    @staticmethod
+    def determine_vertices(img, dst):
+        """
+        Finds the centroid of the points where the lines intersect.
+        """
+        close = cv2.morphologyEx(img, cv2.MORPH_DILATE, cv2.getStructuringElement(cv2.MORPH_RECT, (10, 10)), 1) # Thicken the intersection points
         contours, hier = cv2.findContours(close, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE) # Find the contours
         
         # Find the centroids
@@ -87,71 +96,31 @@ class Extractor:
         centroids = centroids[np.argsort(centroids[:, 1])]
         centroids = np.vstack([centroids[i*10:(i+1)*10][np.argsort(centroids[i*10:(i+1)*10,0])] for i in range(10)])
 
-        # Draw the centroids on the original image
-        grid = self.original.copy()
+        # Draw the centroids on the destination image
+        grid = dst.copy()
         for i, (x, y) in enumerate(centroids):
             cv2.circle(grid, (x, y), 6, (0, 255, 0), -1)
             cv2.putText(grid, str(i), (x, y), cv2.FONT_HERSHEY_DUPLEX, 0.6, (255, 0, 0))
 
-        self._write_images(grid, 7)
-        self.centroids = centroids
+        return centroids, grid
+    
 
-    def correct_perspective(self):
-        # Apply transform
-        corrected = np.zeros((450, 450, 3), np.uint8)
+    @staticmethod
+    def correct_perspective(centroids, dst):
+        """
+        Applies a perspective transform based on found centroids.
+        """
+        corrected = np.zeros((450, 450, 3), np.uint8) # Create a blank image.
         for i in range(100):
             r = i // 10
             c = i % 10
 
             if c == 9 or r == 9: continue
 
-            src = np.array([self.centroids[i], self.centroids[i+1], self.centroids[i+10], self.centroids[i+11]], dtype=np.float32)
-            dst = np.array([[50*c, 50*r], [50*c+50, 50*r], [50*c, 50*r+50], [50*c+50, 50*r+50]], dtype=np.float32)
-            mat = cv2.getPerspectiveTransform(src, dst)
-            warp = cv2.warpPerspective(self.original, mat, (450, 450))
-            corrected[50*r:50*r+50, 50*c:50*c+50] = warp[50*r:50*r+50, 50*c:50*c+50]
+            source = np.array([centroids[i], centroids[i+1], centroids[i+10], centroids[i+11]], dtype=np.float32) # Get the vertices of each cell in the source image
+            destination = np.array([[50*c, 50*r], [50*c+50, 50*r], [50*c, 50*r+50], [50*c+50, 50*r+50]], dtype=np.float32)  # Calculate correspording cells
+            mat = cv2.getPerspectiveTransform(source, destination) # Get the transformation matrix
+            warp = cv2.warpPerspective(dst, mat, (450, 450)) # Apply the transformation to destination image.
+            corrected[50*r:50*r+50, 50*c:50*c+50] = warp[50*r:50*r+50, 50*c:50*c+50] # Build the final image one cell at a time
 
-        self._write_images(corrected, 8)
-        self.image = corrected
-
-    def reverse_perspective(self, img):
-        # Similar to correct_respective, but inverse
-        blank = np.zeros((self.original.shape[0], self.original.shape[1], 3), np.uint8)
-
-        for i in range(100):
-            r = i // 10
-            c = i % 10
-
-            if c == 9 or r == 9: continue
-
-            c1 = self.centroids[i]
-            c2 = self.centroids[i+1]
-            c3 = self.centroids[i+10]
-            c4 = self.centroids[i+11]
-            
-            src = np.array([[50*c, 50*r], [50*c+50, 50*r], [50*c, 50*r+50], [50*c+50, 50*r+50]], dtype=np.float32)
-            dst = np.array([c1, c2, c3, c4], dtype=np.float32)
-            mat = cv2.getPerspectiveTransform(src, dst)
-            warp = cv2.warpPerspective(img, mat, (self.original.shape[1], self.original.shape[0]))
-
-            top_left_x = min([c1[1], c3[1]])
-            top_left_y = min([c1[0], c3[0]])
-            bot_right_x = max([c2[1], c4[1]])
-            bot_right_y = max([c2[0], c4[0]])
-
-            blank[top_left_x:bot_right_x, top_left_y:bot_right_y] = warp[top_left_x:bot_right_x, top_left_y:bot_right_y]
-
-        gray = cv2.cvtColor(blank,cv2.COLOR_BGR2GRAY)
-        ret, mask = cv2.threshold(gray, 40, 255, cv2.THRESH_BINARY)
-        fg = cv2.bitwise_and(blank, blank, mask=mask)
-
-        mask_inv = cv2.bitwise_not(mask)
-        bg = cv2.bitwise_and(self.original, self.original, mask=mask_inv)
-        result = cv2.add(fg, bg)
-
-        self._write_images(result, 11)
-
-    def _write_images(self, img, i):
-        try: os.remove(f"StageImages/{i}.jpg")
-        except: pass
-        cv2.imwrite(f"StageImages/{i}.jpg", img)
+        return corrected
