@@ -78,8 +78,10 @@ class Extractor:
 
         intersection = cv2.bitwise_and(blur_x, blur_y) # Find the intersection of the vertical and the horizantal lines
         ret, intersection = cv2.threshold(intersection, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU) # Apply final thresholding
+        dilate = cv2.morphologyEx(intersection, cv2.MORPH_DILATE, cv2.getStructuringElement(cv2.MORPH_RECT, (10, 10)), 1) # Thicken the intersection points
+        blur = cv2.blur(dilate, (10, 10)) # Smoothen the intersection points
         
-        return intersection
+        return blur
 
 
     @staticmethod
@@ -87,8 +89,7 @@ class Extractor:
         """
         Finds the centroid of the points where the lines intersect.
         """
-        close = cv2.morphologyEx(img, cv2.MORPH_DILATE, cv2.getStructuringElement(cv2.MORPH_RECT, (10, 10)), 1) # Thicken the intersection points
-        contours, hier = cv2.findContours(close, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE) # Find the contours
+        contours, hier = cv2.findContours(img, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE) # Find the contours
         
         # Find the centroids
         centroids = []
