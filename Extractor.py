@@ -19,21 +19,23 @@ class Extractor:
         """
         Detects the outerbox of the puzzle by finding the largest contour. Then, applys a mask to get rid of the outer parts of the puzzle.
         """
-        thresh = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 11, 8) # Convert image to binary before finding contours
-        contours, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE) # Find all the contours
+        thresh = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 25, 12) # Convert image to binary before finding contours
+        contours, hierarchy = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE) # Find all the contours
 
         # Find the largest contour
         max_area = 0
         largest_contour = None
         for contour in contours:
             area = cv2.contourArea(contour)
-            if area > max_area:
+            approx = cv2.approxPolyDP(contour, 0.05*cv2.arcLength(contour, True), True)
+            if area > max_area and len(approx)==4:
                 max_area = area
                 largest_contour = contour
 
         mask = np.zeros(img.shape, np.uint8) # Create a blank mask
         cv2.drawContours(mask, [largest_contour], 0, 255, -1) # Draw and fill up the largest contour we found
         masked = cv2.bitwise_and(cv2.cvtColor(dst, cv2.COLOR_BGR2GRAY), mask) # Apply the mask to the grayscale image
+
         return masked
     
 
@@ -42,36 +44,41 @@ class Extractor:
         """
         Finds all the vertical and horizantal lines.
         """
-        gradient_x = cv2.Sobel(img, cv2.CV_16S, 1, 0) # Find the all vertical lines
-        gradient_x = cv2.convertScaleAbs(gradient_x) # Convert to 8-bit since Otsu Threshold only works with 8-bit single-channel images
-        ret, thresh_x = cv2.threshold(gradient_x, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU) # Apply thresholding before finding contours
-        close_x = cv2.morphologyEx(thresh_x, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_RECT, (2, 10)), 1) # Fill out any cracks in the board lines
-        contours, hierarchy = cv2.findContours(close_x, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE) # Find all the contours
+        gradient_x = cv2.Sobel(img, cv2.CV_16S, 1, 0) # Find the all the vertical lines
+        gradient_x = cv2.convertScaleAbs(gradient_x) # Convert to 8-bit, scale the values between 0-255
+        blur_x = cv2.blur(gradient_x, (7, 25)) # Add some blur
+        ret, thresh_x = cv2.threshold(blur_x, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU) # Apply thresholding before finding contours
+        contours, hierarchy = cv2.findContours(thresh_x, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE) # Find all the contours
 
-        # Find the contours whose ratio of height/width is greater than 5 to differentiate lines from numbers
+        # Find the contours whose ratio of height/width is greater than 7 to differentiate lines from numbers
         for contour in contours:
             x, y, w, h = cv2.boundingRect(contour)
-            if h / w > 5:
-                cv2.drawContours(close_x, [contour], 0, 255, -1)
+            if h / w > 6:
+                cv2.drawContours(thresh_x, [contour], 0, 255, -1)
             else:
-                cv2.drawContours(close_x, [contour], 0, 0, -1)
- 
-        gradient_y = cv2.Sobel(img, cv2.CV_16S, 0, 1) # Find the all horizontal lines
-        gradient_y = cv2.convertScaleAbs(gradient_y) # Convert to 8-bit since Otsu Threshold only works with 8-bit single-channel images
-        ret, thresh_y = cv2.threshold(gradient_y, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU) # Apply thresholding before finding contours, again
-        close_y = cv2.morphologyEx(thresh_y, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_RECT, (10, 2)), 1) # Fill out any cracks in the board lines
-        contours, hierarchy = cv2.findContours(close_y, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)  # Find all the contours
-
-        # Find the contours whose ratio of width/height is greater than 5 to differentiate lines from numbers
+                cv2.drawContours(thresh_x, [contour], 0, 0, -1)
+        
+        blur_x = cv2.blur(thresh_x, (3, 125)) # Add some blur
+        
+        gradient_y = cv2.Sobel(img, cv2.CV_16S, 0, 1) # Find the all the horizontal lines
+        gradient_y = cv2.convertScaleAbs(gradient_y) # Convert to 8-bit, scale the values between 0-255
+        blur_y = cv2.blur(gradient_y, (25, 3)) # Add some blur
+        ret, thresh_y = cv2.threshold(blur_y, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU) # Apply thresholding before finding contours
+        contours, hierarchy = cv2.findContours(thresh_y, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)  # Find all the contours
+        
+        # Find the contours whose ratio of width/height is greater than 7 to differentiate lines from numbers
         for contour in contours:
             x, y, w, h = cv2.boundingRect(contour)
-            if w / h > 5:
-                cv2.drawContours(close_y, [contour], 0, 255, -1)
+            if w / h > 6:
+                cv2.drawContours(thresh_y, [contour], 0, 255, -1)
             else:
-                cv2.drawContours(close_y, [contour], 0, 0, -1)
+                cv2.drawContours(thresh_y, [contour], 0, 0, -1)
 
-        intersection = cv2.bitwise_and(close_x, close_y) # Find the intersection of the vertical and the horizantal lines
+        blur_y = cv2.blur(thresh_y, (125, 3)) # Add some blur
 
+        intersection = cv2.bitwise_and(blur_x, blur_y) # Find the intersection of the vertical and the horizantal lines
+        ret, intersection = cv2.threshold(intersection, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU) # Apply final thresholding
+        
         return intersection
 
 
