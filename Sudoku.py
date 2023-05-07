@@ -53,6 +53,11 @@ class Sudoku:
 
         
     def _save_image(self, img, i):
+        """
+        A utility function to save the image to specified directory.
+        """
+        if not os.path.exists("StageImages"):
+            os.makedirs("StageImages")
         try: os.remove(f"StageImages/{i}.jpg")
         except: pass
         cv2.imwrite(f"StageImages/{i}.jpg", img)
