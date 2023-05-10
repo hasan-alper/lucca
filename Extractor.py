@@ -1,3 +1,5 @@
+from utils import save_image
+
 import numpy as np
 import cv2
 
@@ -10,6 +12,11 @@ class Extractor:
         """
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)  # Convert image to grayscale
         blur = cv2.GaussianBlur(gray, (5, 5), 10) # Add blur
+
+        # Save the images for display purposes
+        save_image(img, 0)
+        save_image(gray, 1)
+        save_image(blur, 2)
 
         return blur
     
@@ -36,6 +43,11 @@ class Extractor:
         cv2.drawContours(mask, [largest_contour], 0, 255, -1) # Draw and fill up the largest contour we found
         masked = cv2.bitwise_and(cv2.cvtColor(dst, cv2.COLOR_BGR2GRAY), mask) # Apply the mask to the grayscale image
 
+        # Save the images for display purposes
+        save_image(thresh, 4)
+        save_image(mask, 5)
+        save_image(masked, 6)
+
         return masked
     
 
@@ -51,14 +63,15 @@ class Extractor:
         contours, hierarchy = cv2.findContours(thresh_x, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE) # Find all the contours
 
         # Find the contours whose ratio of height/width is greater than 7 to differentiate lines from numbers
+        lines_x = thresh_x.copy()
         for contour in contours:
             x, y, w, h = cv2.boundingRect(contour)
             if h / w > 6:
-                cv2.drawContours(thresh_x, [contour], 0, 255, -1)
+                cv2.drawContours(lines_x, [contour], 0, 255, -1)
             else:
-                cv2.drawContours(thresh_x, [contour], 0, 0, -1)
+                cv2.drawContours(lines_x, [contour], 0, 0, -1)
         
-        blur_x = cv2.blur(thresh_x, (3, 125)) # Add some blur
+        final_x = cv2.blur(lines_x, (3, 125)) # Add some blur
         
         gradient_y = cv2.Sobel(img, cv2.CV_16S, 0, 1) # Find the all the horizontal lines
         gradient_y = cv2.convertScaleAbs(gradient_y) # Convert to 8-bit, scale the values between 0-255
@@ -67,19 +80,35 @@ class Extractor:
         contours, hierarchy = cv2.findContours(thresh_y, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)  # Find all the contours
         
         # Find the contours whose ratio of width/height is greater than 7 to differentiate lines from numbers
+        lines_y = thresh_y.copy()
         for contour in contours:
             x, y, w, h = cv2.boundingRect(contour)
             if w / h > 6:
-                cv2.drawContours(thresh_y, [contour], 0, 255, -1)
+                cv2.drawContours(lines_y, [contour], 0, 255, -1)
             else:
-                cv2.drawContours(thresh_y, [contour], 0, 0, -1)
+                cv2.drawContours(lines_y, [contour], 0, 0, -1)
 
-        blur_y = cv2.blur(thresh_y, (125, 3)) # Add some blur
+        final_y = cv2.blur(lines_y, (125, 3)) # Add some blur
 
-        intersection = cv2.bitwise_and(blur_x, blur_y) # Find the intersection of the vertical and the horizantal lines
+        intersection = cv2.bitwise_and(final_x, final_y) # Find the intersection of the vertical and the horizantal lines
         ret, intersection = cv2.threshold(intersection, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU) # Apply final thresholding
         dilate = cv2.morphologyEx(intersection, cv2.MORPH_DILATE, cv2.getStructuringElement(cv2.MORPH_RECT, (10, 10)), 1) # Thicken the intersection points
         blur = cv2.blur(dilate, (10, 10)) # Smoothen the intersection points
+
+        # Save the images for display purposes
+        save_image(gradient_x, 7)
+        save_image(blur_x, 8)
+        save_image(thresh_x, 9)
+        save_image(lines_x, 10)
+        save_image(final_x, 11)
+        save_image(gradient_y, 12)
+        save_image(blur_y, 13)
+        save_image(thresh_y, 14)
+        save_image(lines_y, 15)
+        save_image(final_y, 16)
+        save_image(intersection, 17)
+        save_image(dilate, 18)
+        save_image(blur, 19)
         
         return blur
 
@@ -105,12 +134,22 @@ class Extractor:
         centroids = np.vstack([centroids[i*10:(i+1)*10][np.argsort(centroids[i*10:(i+1)*10,0])] for i in range(10)])
 
         # Draw the centroids on the destination image
-        grid = dst.copy()
+        grid1 = dst.copy()
         for i, (x, y) in enumerate(centroids):
-            cv2.circle(grid, (x, y), 6, (0, 255, 0), -1)
-            cv2.putText(grid, str(i), (x, y), cv2.FONT_HERSHEY_DUPLEX, 0.6, (255, 0, 0))
+            cv2.circle(grid1, (x, y), 4, (0, 255, 0), -1)
+            cv2.putText(grid1, str(i), (x, y), cv2.FONT_HERSHEY_DUPLEX, 0.6, (255, 0, 0))
 
-        return centroids, grid
+        # Draw the centroids on the intersection image (Only for display purposes)
+        grid2 = img.copy()
+        grid2 = cv2.merge((grid2, grid2, grid2))
+        for i, (x, y) in enumerate(centroids):
+            cv2.circle(grid2, (x, y), 4, (0, 255, 0), -1)
+
+        # Save the images for display purposes
+        save_image(grid2, 20)
+        save_image(grid1, 21)
+
+        return centroids
     
 
     @staticmethod
@@ -130,5 +169,8 @@ class Extractor:
             mat = cv2.getPerspectiveTransform(source, destination) # Get the transformation matrix
             warp = cv2.warpPerspective(dst, mat, (450, 450)) # Apply the transformation to destination image.
             corrected[50*r:50*r+50, 50*c:50*c+50] = warp[50*r:50*r+50, 50*c:50*c+50] # Build the final image one cell at a time
+
+        # Save the images for display purposes
+        save_image(corrected, 22)
 
         return corrected

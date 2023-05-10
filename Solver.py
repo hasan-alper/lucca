@@ -1,3 +1,5 @@
+from utils import save_image
+
 import numpy as np
 import cv2
 
@@ -50,6 +52,9 @@ class Solver:
                 if digit == 0: continue
                 else: cv2.putText(image_results, str(digit), (x*50+10, y*50+40), cv2.FONT_HERSHEY_DUPLEX, 1.4, (255, 0, 255), lineType=cv2.LINE_AA)
         
+        # Save the images for display purposes
+        save_image(image_results, 24)
+
         return image_results
 
 
@@ -147,5 +152,9 @@ class Solver:
 
         # Add these both images together
         result = cv2.add(fg, bg)
+
+        # Save the images for display purposes
+        save_image(fg, 25)
+        save_image(result, 26)
 
         return result

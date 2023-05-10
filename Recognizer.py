@@ -1,3 +1,5 @@
+from utils import save_image
+
 import numpy as np
 import cv2
 import keras
@@ -71,4 +73,7 @@ class Recognizer:
                 if digit == 0: continue
                 cv2.putText(image_results, str(digit), (x*50+10, y*50+40), cv2.FONT_HERSHEY_DUPLEX, 1.4, (255, 255, 255), lineType=cv2.LINE_AA)
 
-        return image_results, results
+        # Save the images for display purposes
+        save_image(image_results, 23)
+
+        return results
