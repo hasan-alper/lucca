@@ -14,9 +14,9 @@ class Extractor:
         blur = cv2.GaussianBlur(gray, (5, 5), 10) # Add blur
 
         # Save the images for display purposes
-        save_image(img, 0)
-        save_image(gray, 1)
-        save_image(blur, 2)
+        save_image(img, 1)
+        save_image(gray, 2)
+        save_image(blur, 3)
 
         return blur
     
@@ -62,7 +62,7 @@ class Extractor:
         ret, thresh_x = cv2.threshold(blur_x, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU) # Apply thresholding before finding contours
         contours, hierarchy = cv2.findContours(thresh_x, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE) # Find all the contours
 
-        # Find the contours whose ratio of height/width is greater than 7 to differentiate lines from numbers
+        # Find the contours whose ratio of height/width is greater than 6 to differentiate lines from numbers
         lines_x = thresh_x.copy()
         for contour in contours:
             x, y, w, h = cv2.boundingRect(contour)
@@ -79,7 +79,7 @@ class Extractor:
         ret, thresh_y = cv2.threshold(blur_y, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU) # Apply thresholding before finding contours
         contours, hierarchy = cv2.findContours(thresh_y, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)  # Find all the contours
         
-        # Find the contours whose ratio of width/height is greater than 7 to differentiate lines from numbers
+        # Find the contours whose ratio of width/height is greater than 6 to differentiate lines from numbers
         lines_y = thresh_y.copy()
         for contour in contours:
             x, y, w, h = cv2.boundingRect(contour)
