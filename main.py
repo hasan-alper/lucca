@@ -59,11 +59,17 @@ image_label.pack(padx=10, pady=10)
 navigation_frame = ttk.Frame(window, relief="solid")
 navigation_frame.grid(row=2, column=1, sticky="nesw")
 
+home_button = ttk.Button(navigation_frame, text="Home", state="disabled", command=lambda: home_image())
+home_button.pack(padx=10, pady=10)
+
 back_button = ttk.Button(navigation_frame, text="Back", state="disabled", command=lambda: back_image())
-back_button.pack(padx=10, pady=10)
+back_button.pack(padx=10, pady=(0, 10))
 
 next_button = ttk.Button(navigation_frame, text="Next", state="disabled", command=lambda: next_image())
 next_button.pack(padx=10, pady=(0, 10))
+
+skip_button = ttk.Button(navigation_frame, text="Skip", state="disabled", command=lambda: skip_image())
+skip_button.pack(padx=10, pady=(0, 10))
 
 index = 1
 
@@ -74,13 +80,45 @@ def upload_file():
     filename = filedialog.askopenfilename(filetypes=[("JPG Files", "*.jpg"), ("PNG Files", "*.png")])
     path.set(filename)
 
+    home_button["state"] = "disabled"
     back_button["state"] = "disabled"
     next_button["state"] = "normal"
+    skip_button["state"] = "normal"
+
     sudoku = Sudoku(filename)
     try: sudoku.solve()
     except: pass
 
     update_content(index)
+
+def home_image():
+    global index
+    index = 1
+
+    update_content(index)
+
+    home_button["state"] = "disabled"
+    back_button["state"] = "disabled"
+    next_button["state"] = "normal"
+    skip_button["state"] = "normal"
+
+
+def back_image():
+    global index
+    index -= 1
+
+    update_content(index)
+
+    try:
+        Image.open(f"StageImages/{index-1}.jpg")
+    except FileNotFoundError:
+        home_button["state"] = "disabled"
+        back_button["state"] = "disabled"
+    else:
+        back_button["state"] = "normal"
+    finally:
+        next_button["state"] = "normal"
+        skip_button["state"] = "normal"
 
 
 def next_image():
@@ -93,27 +131,30 @@ def next_image():
         Image.open(f"StageImages/{index+1}.jpg")
     except FileNotFoundError:
         next_button["state"] = "disabled"
+        skip_button["state"] = "disabled"
     else:
         next_button["state"] = "normal"
     finally:
         back_button["state"] = "normal"
+        home_button["state"] = "normal"
 
 
-def back_image():
+def skip_image():
     global index
-    index -= 1
+    
+    for i in range(30):
+        try:
+            Image.open(f"StageImages/{index+1}.jpg")
+            index = i
+        except FileNotFoundError:
+            break
 
     update_content(index)
 
-    try:
-        Image.open(f"StageImages/{index-1}.jpg")
-    except FileNotFoundError:
-        back_button["state"] = "disabled"
-    else:
-        back_button["state"] = "normal"
-    finally:
-        next_button["state"] = "normal"
-
+    home_button["state"] = "normal"
+    back_button["state"] = "normal"
+    next_button["state"] = "disabled"
+    skip_button["state"] = "disabled"
 
 def update_content(i):
     image = Image.open(f"StageImages/{i}.jpg")
