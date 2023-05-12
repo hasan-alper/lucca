@@ -1,5 +1,4 @@
-import tkinter
-import json
+import tkinter, cv2, json, os
 from tkinter import ttk
 from tkinter import filedialog
 from PIL import ImageTk, Image
@@ -9,7 +8,7 @@ with open("content.json", "r") as file:
     content = json.load(file)
 
 window = tkinter.Tk()
-window.geometry("600x650")
+window.geometry("600x700")
 window.title("Lucca - Sudoku Solver")
 
 window.rowconfigure(0, minsize=120)
@@ -37,11 +36,14 @@ path_frame = ttk.Frame(window, relief="solid")
 path_frame.grid(row=1, column=0, columnspan=2, sticky="nesw")
 
 upload_button = ttk.Button(path_frame, text="Open", command=lambda: upload_file())
-upload_button.pack(side="left", padx=10, pady=10)
+upload_button.grid(row=0, column=0, padx=10, pady=5)
+
+camera_button = ttk.Button(path_frame, text="Camera", command=lambda: open_camera())
+camera_button.grid(row=1, column=0, padx=10, pady=(0,5))
 
 path = tkinter.StringVar(value="No Image Selected")
 upload_label = ttk.Label(path_frame, textvariable=path, font=("Helvetica", 16), relief="solid")
-upload_label.pack(expand=True, fill="x", padx=10, pady=10)
+upload_label.grid(row=0, column=1, rowspan=2, sticky="nesw", padx=10, pady=10)
 
 
 ########## RESULT FRAME ##########
@@ -90,6 +92,47 @@ def upload_file():
     except: pass
 
     update_content(index)
+
+
+def open_camera():
+    cap = cv2.VideoCapture(0)
+
+    while True:
+        ret, frame = cap.read()
+        cv2.imshow("Camera. Press 'c' to capture, 'q' to quit.", frame)
+
+        key = cv2.waitKey(1) & 0xFF
+        if key == ord('q'):
+            cap.release()
+            cv2.destroyAllWindows()
+            return
+        elif key == ord('c'):
+            height = frame.shape[0]
+            width = frame.shape[1]
+            x = min(height, width)
+            frame = frame[(height-x)//2:(height-x)//2 + x, (width-x)//2:(width-x)//2 + x]
+            cv2.imwrite("capture.png", frame)
+            break
+
+    cap.release()
+    cv2.destroyAllWindows()
+
+    global index
+    index = 1
+
+    filename = "capture.png"
+    path.set(os.path.abspath(filename))
+
+    home_button["state"] = "disabled"
+    back_button["state"] = "disabled"
+    next_button["state"] = "normal"
+    skip_button["state"] = "normal"
+
+    sudoku = Sudoku(filename)
+    try: sudoku.solve()
+    except: pass
+    update_content(index)
+
 
 def home_image():
     global index
@@ -155,6 +198,7 @@ def skip_image():
     back_button["state"] = "normal"
     next_button["state"] = "disabled"
     skip_button["state"] = "disabled"
+
 
 def update_content(i):
     image = Image.open(f"StageImages/{i}.jpg")
