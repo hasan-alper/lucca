@@ -44,6 +44,7 @@ class Solver:
         """
         arr = results.copy()
         Solver._solve(arr)
+        if arr == results: raise Exception(f'Invalid sudoku.')
         # Create an image of solved puzzle for display purposes
         arr[results != 0] = 0
         image_results = np.zeros((450, 450, 3), np.uint8)

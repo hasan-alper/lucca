@@ -20,7 +20,7 @@ class Recognizer:
         for row in rows:
             cols= np.hsplit(row, 9)
             for box in cols:
-                box = box[3:47, 3:47] # DON'T CHANGE THESE VALUES! THE SOLUTION WON'T WORK FOR SOME REASON. I HATE THIS.
+                box = box[4:46, 4:46]
                 boxes.append(box)
 
         # Center the digits
@@ -35,11 +35,15 @@ class Recognizer:
                 boxes[i] = blank
                 continue
 
+            if cv2.contourArea(largest_contour) < 80:
+                boxes[i] = blank
+                continue
+
             yoff = (box.shape[1] - h) // 2
             xoff = (box.shape[0] - w) // 2
             blank[yoff:yoff+h, xoff:xoff+w] = box[y:y+h, x:x+w]
             boxes[i] = blank
-
+            
         # Prepare images for the model
         digits = []
         for box in boxes:
@@ -65,7 +69,7 @@ class Recognizer:
             max = np.argmax(prediction) if np.max(prediction) > 0.5 else 0
             results.append(max)
         results = np.array(results).reshape((9, 9)) 
-        
+
         # Create an image of recognized digits just for display purposes
         image_results = np.zeros((450, 450, 3), np.uint8)
         for y, row in enumerate(results):
