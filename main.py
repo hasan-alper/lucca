@@ -18,6 +18,11 @@ window.rowconfigure(2, weight=1)
 window.columnconfigure(0, weight=1, minsize=480)
 window.columnconfigure(1)
 
+window.bind("<q>", lambda e: window.destroy())
+window.bind("<o>", lambda e: upload_file())
+window.bind("<c>", lambda e: open_camera())
+window.bind("<s>", lambda e: open_shortcuts())
+
 ########## HEADER FRAME ##########
 header_frame = ttk.Frame(window, relief="solid")
 header_frame.grid(row=0, column=0, columnspan=2, sticky="nesw")
@@ -73,6 +78,9 @@ next_button.pack(padx=10, pady=(0, 10))
 skip_button = ttk.Button(navigation_frame, text="Skip", state="disabled", command=lambda: skip_image())
 skip_button.pack(padx=10, pady=(0, 10))
 
+shortcut_button = ttk.Button(navigation_frame, text="Shortcuts", command=lambda: open_shortcuts())
+shortcut_button.pack(side="bottom", padx=10, pady=10)
+
 index = 1
 
 def upload_file():
@@ -80,12 +88,13 @@ def upload_file():
     index = 1
 
     filename = filedialog.askopenfilename(filetypes=[("JPG Files", "*.jpg"), ("PNG Files", "*.png")])
+    if not filename: return
     path.set(filename)
 
-    home_button["state"] = "disabled"
-    back_button["state"] = "disabled"
-    next_button["state"] = "normal"
-    skip_button["state"] = "normal"
+    disable_home(True)
+    disable_back(True)
+    disable_next(False)
+    disable_skip(False)
 
     sudoku = Sudoku(filename)
     try: sudoku.solve()
@@ -123,10 +132,10 @@ def open_camera():
     filename = "capture.png"
     path.set(os.path.abspath(filename))
 
-    home_button["state"] = "disabled"
-    back_button["state"] = "disabled"
-    next_button["state"] = "normal"
-    skip_button["state"] = "normal"
+    disable_home(True)
+    disable_back(True)
+    disable_next(False)
+    disable_skip(False)
 
     sudoku = Sudoku(filename)
     try: sudoku.solve()
@@ -140,10 +149,10 @@ def home_image():
 
     update_content(index)
 
-    home_button["state"] = "disabled"
-    back_button["state"] = "disabled"
-    next_button["state"] = "normal"
-    skip_button["state"] = "normal"
+    disable_home(True)
+    disable_back(True)
+    disable_next(False)
+    disable_skip(False)
 
 
 def back_image():
@@ -155,13 +164,13 @@ def back_image():
     try:
         Image.open(f"StageImages/{index-1}.jpg")
     except FileNotFoundError:
-        home_button["state"] = "disabled"
-        back_button["state"] = "disabled"
+        disable_home(True)
+        disable_back(True)
     else:
-        back_button["state"] = "normal"
+        disable_back(False)
     finally:
-        next_button["state"] = "normal"
-        skip_button["state"] = "normal"
+        disable_next(False)
+        disable_skip(False)
 
 
 def next_image():
@@ -173,13 +182,13 @@ def next_image():
     try:
         Image.open(f"StageImages/{index+1}.jpg")
     except FileNotFoundError:
-        next_button["state"] = "disabled"
-        skip_button["state"] = "disabled"
+        disable_next(True)
+        disable_skip(True)
     else:
-        next_button["state"] = "normal"
+        disable_next(False)
     finally:
-        back_button["state"] = "normal"
-        home_button["state"] = "normal"
+        disable_back(False)
+        disable_home(False)
 
 
 def skip_image():
@@ -194,10 +203,28 @@ def skip_image():
 
     update_content(index)
 
-    home_button["state"] = "normal"
-    back_button["state"] = "normal"
-    next_button["state"] = "disabled"
-    skip_button["state"] = "disabled"
+    disable_home(False)
+    disable_back(False)
+    disable_next(True)
+    disable_skip(True)
+
+
+def open_shortcuts():
+    menu = tkinter.Toplevel(window)
+    menu.geometry("300x200")
+    menu.title("Keyboard Shortcuts")
+    menu.bind("<q>", lambda e: menu.destroy())
+
+    ttk.Label(menu, text = "<q> Quit the app.").pack()
+    ttk.Label(menu, text = "<c> Open the camera.").pack()
+    ttk.Label(menu, text = "<o> Open the file explorer.").pack()
+    ttk.Label(menu, text = "<Up> Go to the original image.").pack()
+    ttk.Label(menu, text = "<Down> Go to the result image.").pack()
+    ttk.Label(menu, text = "<Left> Go to the previous image.").pack()
+    ttk.Label(menu, text = "<Right> Go to the next image").pack()
+    ttk.Label(menu, text = "<s> Open shortcuts.").pack()
+
+    menu.mainloop()  
 
 
 def update_content(i):
@@ -209,6 +236,42 @@ def update_content(i):
 
     header_var.set(content[i-1]["header"])
     description_var.set(content[i-1]["description"])
+
+
+def disable_home(state):
+    if state:
+        home_button["state"] = "disabled"
+        window.unbind("<Up>")
+    else:
+        home_button["state"] = "normal"
+        window.bind("<Up>", lambda e: home_image())
+
+
+def disable_back(state):
+    if state:
+        back_button["state"] = "disabled"
+        window.unbind("<Left>")
+    else:
+        back_button["state"] = "normal"
+        window.bind("<Left>", lambda e: back_image())
+
+        
+def disable_next(state):
+    if state:
+        next_button["state"] = "disabled"
+        window.unbind("<Right>")
+    else:
+        next_button["state"] = "normal"
+        window.bind("<Right>", lambda e: next_image())
+
+
+def disable_skip(state):
+    if state:
+        skip_button["state"] = "disabled"
+        window.unbind("<Down>")
+    else:
+        skip_button["state"] = "normal"
+        window.bind("<Down>", lambda e: skip_image())
 
 
 window.mainloop()
