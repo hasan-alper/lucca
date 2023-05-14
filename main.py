@@ -8,7 +8,7 @@ with open("content.json", "r") as file:
     content = json.load(file)
 
 window = tkinter.Tk()
-window.geometry("600x700")
+window.geometry("650x700")
 window.title("Lucca - Sudoku Solver")
 
 window.rowconfigure(0, minsize=120)
@@ -21,7 +21,6 @@ window.columnconfigure(1)
 window.bind("<q>", lambda e: window.destroy())
 window.bind("<o>", lambda e: upload_file())
 window.bind("<c>", lambda e: open_camera())
-window.bind("<s>", lambda e: open_shortcuts())
 
 ########## HEADER FRAME ##########
 header_frame = ttk.Frame(window, relief="solid")
@@ -78,8 +77,12 @@ next_button.pack(padx=10, pady=(0, 10))
 skip_button = ttk.Button(navigation_frame, text="Skip", state="disabled", command=lambda: skip_image())
 skip_button.pack(padx=10, pady=(0, 10))
 
+save_button = ttk.Button(navigation_frame, text="Save Image", state="disabled", command=lambda: save_image())
+save_button.pack(padx=10, pady=10)
+
 shortcut_button = ttk.Button(navigation_frame, text="Shortcuts", command=lambda: open_shortcuts())
 shortcut_button.pack(side="bottom", padx=10, pady=10)
+
 
 index = 1
 
@@ -87,7 +90,7 @@ def upload_file():
     global index
     index = 1
 
-    filename = filedialog.askopenfilename(filetypes=[("JPG Files", "*.jpg"), ("PNG Files", "*.png")])
+    filename = filedialog.askopenfilename(title="Select a Sudoku image.", filetypes=[("JPG Files", "*.jpg"), ("PNG Files", "*.png")])
     if not filename: return
     path.set(filename)
 
@@ -95,6 +98,7 @@ def upload_file():
     disable_back(True)
     disable_next(False)
     disable_skip(False)
+    disable_save(False)
 
     sudoku = Sudoku(filename)
     try: sudoku.solve()
@@ -136,6 +140,7 @@ def open_camera():
     disable_back(True)
     disable_next(False)
     disable_skip(False)
+    disable_save(False)
 
     sudoku = Sudoku(filename)
     try: sudoku.solve()
@@ -208,6 +213,14 @@ def skip_image():
     disable_next(True)
     disable_skip(True)
 
+def save_image():
+    global index
+
+    result = filedialog.asksaveasfilename(title="Select a folder.", filetypes=[("JPG Files", "*.jpg"), ("PNG Files", "*.png")])
+    print(result)
+    image = Image.open(f"StageImages/{index}.jpg")
+    image.save(result)
+    
 
 def open_shortcuts():
     menu = tkinter.Toplevel(window)
@@ -221,8 +234,8 @@ def open_shortcuts():
     ttk.Label(menu, text = "<Up> Go to the original image.").pack()
     ttk.Label(menu, text = "<Down> Go to the result image.").pack()
     ttk.Label(menu, text = "<Left> Go to the previous image.").pack()
-    ttk.Label(menu, text = "<Right> Go to the next image").pack()
-    ttk.Label(menu, text = "<s> Open shortcuts.").pack()
+    ttk.Label(menu, text = "<Right> Go to the next image.").pack()
+    ttk.Label(menu, text = "<s> Save the current image.").pack()
 
     menu.mainloop()  
 
@@ -272,6 +285,15 @@ def disable_skip(state):
     else:
         skip_button["state"] = "normal"
         window.bind("<Down>", lambda e: skip_image())
+
+
+def disable_save(state):
+    if state:
+        save_button["state"] = "disabled"
+        window.unbind("s")
+    else:
+        save_button["state"] = "normal"
+        window.bind("s", lambda e: save_image())
 
 
 window.mainloop()
