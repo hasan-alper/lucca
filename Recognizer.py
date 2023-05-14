@@ -65,8 +65,8 @@ class Recognizer:
 
         # Find the best prediction
         results = []
-        for prediction in predictions:
-            max = np.argmax(prediction) if np.max(prediction) > 0.5 else 0
+        for i, prediction in enumerate(predictions):
+            max = np.argmax(prediction) if digits[i].mean() > 0.05 else 0
             results.append(max)
         results = np.array(results).reshape((9, 9)) 
 
