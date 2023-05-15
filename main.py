@@ -79,7 +79,7 @@ path_separator.pack(fill="x")
 result_frame = ttk.Frame(window)
 result_frame.grid(row=4, column=0, padx=10, pady=10, sticky="nesw")
 
-image = Image.open("Screenshots/no-image.jpg")
+image = Image.open("media/no-image.jpg")
 image.thumbnail((450, 450))
 tk_image = ImageTk.PhotoImage(image)
 image_label = ttk.Label(result_frame, image=tk_image)

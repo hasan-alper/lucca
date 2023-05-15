@@ -1,65 +1,9 @@
-# Lucca - A Sudoku Solver
-A sudoku solver that tries to extract the puzzle from a photo and solve it.
+![lucca](media/lucca.png)
 
-## About
-This application allows users to quickly and easily solve a Sudoku puzzle by simply taking a picture of the puzzle with their camera. The image is then processed using some image processing techniques to extract the puzzle from the background and identify each individual cell. Next, a convolutional neural network (CNN) model, trained on the MNSIT dataset, is used to accurately predict the digits in each cell. Once all the digits have been identified, a backtracking algorithm is employed to solve the puzzle. Finally, the solution is written directly onto the original image.
+## About Lucca
+Lucca allows users to quickly and easily solve a Sudoku puzzle by simply taking a picture of the puzzle with their camera. The image is then processed using some image processing techniques to extract the puzzle from the background and identify each individual cell. Next, a convolutional neural network (CNN) model, trained on the MNSIT dataset, is used to accurately predict the digits in each cell. Once all the digits have been identified, a backtracking algorithm is employed to solve the puzzle. Finally, the solution is written directly onto the original image.
 
-## Stages
-Here are some of the steps of this process:
-
-### Import The Image
-
-Import a sudoku puzzle image.
-
-![](Screenshots/0.jpg)
-
-### Process The Image
-
-Convert the image to grayscale and apply some blur to reduce the noise.
-
-![](Screenshots/1.jpg)
-
-### Find The Outerbox
-
-Apply thresholding and find the biggest contour. Then get rid of the parts outside the box.
-
-![](Screenshots/2.jpg)
-
-### Determine The Vertices
-
-Determine the intersections of the lines.
-
-![](Screenshots/3.jpg)
-
-### Find The Coordinates of the Vertices
-
-Find the coordinates of the vertices to used them later in the transformation step.
-
-![](Screenshots/4.jpg)
-
-### Transform The Image
-
-Correct the perspective to find the digits easily later in the process
-
-![](Screenshots/5.jpg)
-
-### Identify The Digits
-
-Predict the digits in the puzzle.
-
-![](Screenshots/6.jpg)
-
-### Solve The Puzzle
-
-Determine the remaining digits using a backtracking algorithm.
-
-![](Screenshots/7.jpg)
-
-### Finalize The Solution
-
-Write the solution directly onto the original image.
-
-![](Screenshots/8.jpg)
+![lucca](/media/lucca.gif)
 
 ## Installation
 In order to play around with the project, you can set up this repository locally following these simple steps.
